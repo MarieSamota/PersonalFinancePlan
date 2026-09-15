@@ -14,4 +14,4 @@ function errorHandler(err, req, res, next) {
     .json({ error: err.message || "Внутренняя ошибка сервера" });
 }
 
-module.exports = { notFound, errorHandler };
+export { notFound, errorHandler };

@@ -1,12 +1,13 @@
-const express = require("express");
+import express from "express";
+import transactionsRoutes from "./routes/transactions.routes.js";
+import { notFound, errorHandler } from "./middleware/errorHandler.js";
+
 const app = express();
 
 app.use(express.json());
 
-const transactionsRoutes = require("./routes/transactions.routes");
 app.use("/transactions", transactionsRoutes);
 
-const { notFound, errorHandler } = require("./middleware/errorHandler");
 app.use(notFound);
 app.use(errorHandler);
 

@@ -1,6 +1,7 @@
-const express = require("express");
+import express from "express";
+import * as controller from "../controllers/transactions.controller.js";
+
 const router = express.Router();
-const controller = require("../controllers/transactions.controller");
 
 router.get("/", controller.getAll);
 
@@ -12,4 +13,4 @@ router.put("/:id", controller.update);
 
 router.delete("/:id", controller.remove);
 
-module.exports = router;
+export default router;

@@ -72,4 +72,4 @@ function remove(id) {
   return true;
 }
 
-module.exports = { getAll, getById, create, update, remove };
+export { getAll, getById, create, update, remove };

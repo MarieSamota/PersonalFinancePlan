@@ -1,4 +1,4 @@
-const model = require("../models/transactions.model");
+import * as model from "../models/transactions.model.js";
 
 const ALLOWED_TYPES = ["income", "expense"];
 
@@ -123,4 +123,4 @@ function remove(req, res) {
   res.status(204).end();
 }
 
-module.exports = { getAll, getOne, create, update, remove };
+export { getAll, getOne, create, update, remove };
