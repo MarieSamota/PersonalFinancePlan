@@ -1,12 +1,14 @@
+require("dotenv").config();
 const express = require("express");
+const transactionsRoutes = require("./routes/transactions.routes");
+const { notFound, errorHandler } = require("./middleware/errorHandler");
+
 const app = express();
 
 app.use(express.json());
 
-const transactionsRoutes = require("./routes/transactions.routes");
 app.use("/transactions", transactionsRoutes);
 
-const { notFound, errorHandler } = require("./middleware/errorHandler");
 app.use(notFound);
 app.use(errorHandler);
 

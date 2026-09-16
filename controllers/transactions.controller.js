@@ -1,4 +1,7 @@
-const model = require("../models/transactions.model");
+const { Op } = require("sequelize");
+const db = require("../models/index");
+
+const { Transaction } = db;
 
 const ALLOWED_TYPES = ["income", "expense"];
 
@@ -46,33 +49,32 @@ function buildTransactionData(body) {
         ? body.date
         : new Date().toISOString().slice(0, 10),
     description: body.description !== undefined ? body.description : "",
+    isRecurring: body.isRecurring !== undefined ? body.isRecurring : false,
   };
 }
 
-function getAll(req, res) {
-  let result = model.getAll();
-
+async function getAll(req, res) {
   const { type, category } = req.query;
 
+  const where = {};
   if (type !== undefined) {
-    result = result.filter((t) => t.type === type);
+    where.type = type;
   }
   if (category !== undefined) {
-    result = result.filter(
-      (t) => t.category.toLowerCase() === category.toLowerCase(),
-    );
+    where.category = { [Op.iLike]: category };
   }
 
-  res.status(200).json(result);
+  const transactions = await Transaction.findAll({ where });
+  res.status(200).json(transactions);
 }
 
-function getOne(req, res) {
+async function getOne(req, res) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     return res.status(400).json({ error: "id должен быть целым числом" });
   }
 
-  const transaction = model.getById(id);
+  const transaction = await Transaction.findByPk(id);
   if (!transaction) {
     return res.status(404).json({ error: "Транзакция не найдена" });
   }
@@ -80,17 +82,17 @@ function getOne(req, res) {
   res.status(200).json(transaction);
 }
 
-function create(req, res) {
+async function create(req, res) {
   const errors = validateTransaction(req.body);
   if (errors.length > 0) {
     return res.status(400).json({ error: errors.join("; ") });
   }
 
-  const created = model.create(buildTransactionData(req.body));
+  const created = await Transaction.create(buildTransactionData(req.body));
   res.status(201).json(created);
 }
 
-function update(req, res) {
+async function update(req, res) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     return res.status(400).json({ error: "id должен быть целым числом" });
@@ -101,22 +103,26 @@ function update(req, res) {
     return res.status(400).json({ error: errors.join("; ") });
   }
 
-  const updated = model.update(id, buildTransactionData(req.body));
-  if (!updated) {
+  const [, updated] = await Transaction.update(buildTransactionData(req.body), {
+    where: { id },
+    returning: true,
+  });
+
+  if (updated.length === 0) {
     return res.status(404).json({ error: "Транзакция не найдена" });
   }
 
-  res.status(200).json(updated);
+  res.status(200).json(updated[0]);
 }
 
-function remove(req, res) {
+async function remove(req, res) {
   const id = Number(req.params.id);
   if (!Number.isInteger(id)) {
     return res.status(400).json({ error: "id должен быть числом" });
   }
 
-  const deleted = model.remove(id);
-  if (!deleted) {
+  const deletedCount = await Transaction.destroy({ where: { id } });
+  if (deletedCount === 0) {
     return res.status(404).json({ error: "Транзакция не найдена" });
   }
 

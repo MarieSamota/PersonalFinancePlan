@@ -9,6 +9,14 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: "Некорректный JSON в теле запроса" });
   }
 
+  if (
+    err.name === "SequelizeValidationError" ||
+    err.name === "SequelizeUniqueConstraintError"
+  ) {
+    const message = err.errors.map((e) => e.message).join("; ");
+    return res.status(400).json({ error: message });
+  }
+
   res
     .status(err.status || 500)
     .json({ error: err.message || "Внутренняя ошибка сервера" });
