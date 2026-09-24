@@ -96,3 +96,69 @@ DELETE {{baseUrl}}/transactions/3
 
 ### 
 GET {{baseUrl}}/
+
+
+
+### Регистрация
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "supersecret1"
+}
+
+### Повторная регистрация тем же email (ожидается 400)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "supersecret1"
+}
+
+### Регистрация без пароля (ожидается 400)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "broken@example.com"
+}
+
+### Вход до подтверждения email (ожидается 403)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "supersecret1"
+}
+
+### Вход с неверным паролем (ожидается 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "неверный-пароль"
+}
+
+### Подтверждение email (вставь токен, который сервер напечатал в консоли после первой регистрации)
+GET {{baseUrl}}/auth/verify-email/ВСТАВЬ_ТОКЕН_ИЗ_КОНСОЛИ
+
+### Вход после подтверждения (ожидается 200 и токен)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "maria@example.com",
+  "password": "supersecret1"
+}
+
+### Профиль с валидным токеном
+GET {{baseUrl}}/profile
+Authorization: Bearer {{login.response.body.$.token}}
+
+### Профиль без токена (ожидается 401)
+GET {{baseUrl}}/profile
