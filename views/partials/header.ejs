@@ -1,0 +1,21 @@
+<% const q = locals.authQuery || ""; %>
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title><%= title %> – Финансовый план</title>
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container">
+        <a class="brand" href="/<%= q %>">Финансовый план</a>
+        <nav>
+          <a href="/<%= q %>">Главная</a>
+          <a href="/add<%= q %>">Добавить транзакцию</a>
+          <a href="/admin/logs<%= q %>">Логи</a>
+        </nav>
+      </div>
+    </header>
+    <main class="container">

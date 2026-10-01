@@ -1,0 +1,33 @@
+<%- include('partials/header') %>
+
+<div class="page-top">
+  <a class="btn-back" href="/<%= authQuery %>">Назад к списку</a>
+</div>
+
+<div class="card">
+  <h2 class="card-title"><%= transaction.description || transaction.category %></h2>
+  <div class="info-rows">
+    <div class="info-row">
+      <span class="k">Сумма</span>
+      <span class="amount <%= transaction.type %>"><%= transaction.type === "income" ? "+" : "-" %><%= transaction.amount %></span>
+    </div>
+    <div class="info-row">
+      <span class="k">Тип</span>
+      <span><%= transaction.type === "income" ? "Доход" : "Расход" %></span>
+    </div>
+    <div class="info-row">
+      <span class="k">Дата</span>
+      <span><%= formatDate(transaction.date) %></span>
+    </div>
+    <div class="info-row">
+      <span class="k">Категория</span>
+      <span><%= transaction.category %></span>
+    </div>
+    <div class="info-row">
+      <span class="k">Регулярная</span>
+      <span><%= transaction.isRecurring ? "Да" : "Нет" %></span>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

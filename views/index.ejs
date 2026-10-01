@@ -1,0 +1,29 @@
+<%- include('partials/header') %>
+
+<div class="page-top">
+  <h1>Транзакции</h1>
+</div>
+
+<% if (transactions.length > 0) { %>
+  <div class="list">
+    <% transactions.forEach(function (t) { %>
+      <a class="tx" href="/item/<%= t.id %><%= authQuery %>">
+        <div class="tx-main">
+          <div class="tx-title"><%= t.description || t.category %></div>
+          <div class="tx-sub">
+            <span><%= formatDate(t.date) %></span>
+            <% if (t.description) { %>
+              <span><%= t.category %></span>
+            <% } %>
+          </div>
+        </div>
+        <div class="tx-amount <%= t.type %>"><%= t.type === "income" ? "+" : "-" %><%= t.amount %></div>
+        <span class="chev"></span>
+      </a>
+    <% }); %>
+  </div>
+<% } else { %>
+  <p>Транзакций пока нет.</p>
+<% } %>
+
+<%- include('partials/footer') %>
