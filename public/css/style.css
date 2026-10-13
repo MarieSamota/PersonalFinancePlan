@@ -39,6 +39,9 @@ a {
 
 .site-header {
   background: var(--accent);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .site-header .container {
