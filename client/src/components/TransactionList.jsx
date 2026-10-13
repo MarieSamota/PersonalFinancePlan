@@ -1,3 +1,6 @@
+import { Spinner } from "./Spinner";
+import { ErrorMessage } from "./ErrorMessage";
+
 function EditIcon() {
   return (
     <svg
@@ -59,14 +62,17 @@ function RepeatIcon() {
 
 export function TransactionList({
   items,
+  loading,
+  error,
+  onRetry,
   onEdit,
   onDelete,
   filterType,
   onFilterTypeChange,
-  filterCategory,
-  onFilterCategoryChange,
   filterRecurring,
   onFilterRecurringChange,
+  search,
+  onSearchChange,
 }) {
   return (
     <div className="transaction-list card">
@@ -89,43 +95,57 @@ export function TransactionList({
         </select>
         <input
           type="text"
-          placeholder="Фильтр по категории"
-          value={filterCategory}
-          onChange={(e) => onFilterCategoryChange(e.target.value)}
+          placeholder="Поиск по категории и описанию"
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
         />
       </div>
 
-      <ul>
-        {items.map((t) => (
-          <li key={t.id} className={t.type}>
-            <span className="amount">
-              {t.type === "income" ? "+" : "-"}
-              {Number(t.amount).toLocaleString("ru-RU")}
-            </span>
-            <span className="category">
-              {t.category}
-              {t.isRecurring && (
-                <span className="recurring-badge" title="Регулярный платёж">
-                  <RepeatIcon />
-                </span>
-              )}
-            </span>
-            <span className="date">{t.date}</span>
-            <span className="description">{t.description}</span>
-            <div className="actions">
-              <button onClick={() => onEdit(t.id)} aria-label="Изменить">
-                <EditIcon />
-              </button>
-              <button onClick={() => onDelete(t.id)} aria-label="Удалить">
-                <TrashIcon />
-              </button>
-            </div>
-          </li>
-        ))}
-        {items.length === 0 && (
-          <li className="empty">Нет транзакций по заданному фильтру</li>
-        )}
-      </ul>
+      {loading && <Spinner />}
+
+      {!loading && error && <ErrorMessage error={error} onRetry={onRetry} />}
+
+      {!loading && !error && (
+        <ul>
+          {items.map((t) => (
+            <li key={t.id} className={t.isPending ? `${t.type} pending` : t.type}>
+              <span className="amount">
+                {t.type === "income" ? "+" : "-"}
+                {Number(t.amount).toLocaleString("ru-RU")}
+              </span>
+              <span className="category">
+                {t.category}
+                {t.isRecurring && (
+                  <span className="recurring-badge" title="Регулярный платёж">
+                    <RepeatIcon />
+                  </span>
+                )}
+              </span>
+              <span className="date">{t.date}</span>
+              <span className="description">{t.description}</span>
+              <div className="actions">
+                <button
+                  onClick={() => onEdit(t.id)}
+                  disabled={t.isPending}
+                  aria-label="Изменить"
+                >
+                  <EditIcon />
+                </button>
+                <button
+                  onClick={() => onDelete(t.id)}
+                  disabled={t.isPending}
+                  aria-label="Удалить"
+                >
+                  <TrashIcon />
+                </button>
+              </div>
+            </li>
+          ))}
+          {items.length === 0 && (
+            <li className="empty">Нет транзакций по заданному фильтру</li>
+          )}
+        </ul>
+      )}
     </div>
   );
 }

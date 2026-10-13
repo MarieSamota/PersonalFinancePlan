@@ -1,103 +1,5 @@
 @baseUrl = http://localhost:3000
-
-### 
-GET {{baseUrl}}/transactions
-
-### 
-GET {{baseUrl}}/transactions?type=expense
-
-### 
-GET {{baseUrl}}/transactions?category=Продукты
-
-###
-GET {{baseUrl}}/transactions/1
-
-### 
-GET {{baseUrl}}/transactions/999
-
-###
-GET {{baseUrl}}/transactions/abc
-
-### 
-POST {{baseUrl}}/transactions
-Content-Type: application/json
-
-{
-  "amount": 3500,
-  "type": "expense",
-  "category": "Кафе",
-  "date": "2026-09-02",
-  "description": "Обед с другом"
-}
-
-### 
-Content-Type: application/json
-
-{
-  "amount": 100000,
-  "type": "income",
-  "category": "Зарплата"
-}
-
-### 
-POST {{baseUrl}}/transactions
-Content-Type: application/json
-
-{
-  "type": "salary",
-  "category": ""
-}
-
-### 
-POST {{baseUrl}}/transactions
-Content-Type: application/json
-
-{
-  "amount": 500,
-}
-
-### 
-PUT {{baseUrl}}/transactions/2
-Content-Type: application/json
-
-{
-  "amount": 45,
-  "type": "expense",
-  "category": "Продукты",
-  "date": "2026-09-03",
-  "description": "Магазин у дома"
-}
-
-### 
-PUT {{baseUrl}}/transactions/999
-Content-Type: application/json
-
-{
-  "amount": 10,
-  "type": "income",
-  "category": "Прочее"
-}
-
-### 
-PUT {{baseUrl}}/transactions/2
-Content-Type: application/json
-
-{
-  "amount": -5,
-  "type": "expense",
-  "category": "Продукты"
-}
-
-### 
-DELETE {{baseUrl}}/transactions/3
-
-### (повторный)
-DELETE {{baseUrl}}/transactions/3
-
-### 
-GET {{baseUrl}}/
-
-
+@token = {{login.response.body.$.token}}
 
 ### Регистрация
 POST {{baseUrl}}/auth/register
@@ -158,7 +60,131 @@ Content-Type: application/json
 
 ### Профиль с валидным токеном
 GET {{baseUrl}}/profile
-Authorization: Bearer {{login.response.body.$.token}}
+Authorization: Bearer {{token}}
 
 ### Профиль без токена (ожидается 401)
 GET {{baseUrl}}/profile
+
+### Транзакции без токена (ожидается 401)
+GET {{baseUrl}}/transactions
+
+###
+GET {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/transactions?type=expense
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/transactions?category=Продукты
+Authorization: Bearer {{token}}
+
+### Поиск по подстроке в категории и описании
+GET {{baseUrl}}/transactions?search=прод
+Authorization: Bearer {{token}}
+
+### Поиск без совпадений (ожидается пустой массив)
+GET {{baseUrl}}/transactions?search=несуществующее
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/transactions/1
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/transactions/999
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/transactions/abc
+Authorization: Bearer {{token}}
+
+###
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 3500,
+  "type": "expense",
+  "category": "Кафе",
+  "date": "2026-09-02",
+  "description": "Обед с другом"
+}
+
+###
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 100000,
+  "type": "income",
+  "category": "Зарплата"
+}
+
+###
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "type": "salary",
+  "category": ""
+}
+
+###
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 500,
+}
+
+###
+PUT {{baseUrl}}/transactions/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 45,
+  "type": "expense",
+  "category": "Продукты",
+  "date": "2026-09-03",
+  "description": "Магазин у дома"
+}
+
+###
+PUT {{baseUrl}}/transactions/999
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 10,
+  "type": "income",
+  "category": "Прочее"
+}
+
+###
+PUT {{baseUrl}}/transactions/2
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": -5,
+  "type": "expense",
+  "category": "Продукты"
+}
+
+###
+DELETE {{baseUrl}}/transactions/3
+Authorization: Bearer {{token}}
+
+### (повторный)
+DELETE {{baseUrl}}/transactions/3
+Authorization: Bearer {{token}}
+
+###
+GET {{baseUrl}}/

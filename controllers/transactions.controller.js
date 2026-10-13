@@ -54,7 +54,7 @@ function buildTransactionData(body) {
 }
 
 async function getAll(req, res) {
-  const { type, category } = req.query;
+  const { type, category, search } = req.query;
 
   const where = {};
   if (type !== undefined) {
@@ -63,8 +63,20 @@ async function getAll(req, res) {
   if (category !== undefined) {
     where.category = { [Op.iLike]: category };
   }
+  if (typeof search === "string" && search.trim() !== "") {
+    // % и _ – спецсимволы LIKE, экранируем их, чтобы искались как обычные символы
+    const escaped = search.trim().replace(/[\\%_]/g, "\\$&");
+    const pattern = `%${escaped}%`;
+    where[Op.or] = [
+      { category: { [Op.iLike]: pattern } },
+      { description: { [Op.iLike]: pattern } },
+    ];
+  }
 
-  const transactions = await Transaction.findAll({ where });
+  const transactions = await Transaction.findAll({
+    where,
+    order: [["id", "ASC"]],
+  });
   res.status(200).json(transactions);
 }
 
