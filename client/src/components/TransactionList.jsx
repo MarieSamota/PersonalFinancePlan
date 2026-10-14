@@ -65,6 +65,7 @@ export function TransactionList({
   loading,
   error,
   onRetry,
+  deletingIds,
   onEdit,
   onDelete,
   filterType,
@@ -107,40 +108,43 @@ export function TransactionList({
 
       {!loading && !error && (
         <ul>
-          {items.map((t) => (
-            <li key={t.id} className={t.isPending ? `${t.type} pending` : t.type}>
-              <span className="amount">
-                {t.type === "income" ? "+" : "-"}
-                {Number(t.amount).toLocaleString("ru-RU")}
-              </span>
-              <span className="category">
-                {t.category}
-                {t.isRecurring && (
-                  <span className="recurring-badge" title="Регулярный платёж">
-                    <RepeatIcon />
-                  </span>
-                )}
-              </span>
-              <span className="date">{t.date}</span>
-              <span className="description">{t.description}</span>
-              <div className="actions">
-                <button
-                  onClick={() => onEdit(t.id)}
-                  disabled={t.isPending}
-                  aria-label="Изменить"
-                >
-                  <EditIcon />
-                </button>
-                <button
-                  onClick={() => onDelete(t.id)}
-                  disabled={t.isPending}
-                  aria-label="Удалить"
-                >
-                  <TrashIcon />
-                </button>
-              </div>
-            </li>
-          ))}
+          {items.map((t) => {
+            const isDeleting = deletingIds.includes(t.id);
+            return (
+              <li key={t.id} className={isDeleting ? `${t.type} pending` : t.type}>
+                <span className="amount">
+                  {t.type === "income" ? "+" : "-"}
+                  {Number(t.amount).toLocaleString("ru-RU")}
+                </span>
+                <span className="category">
+                  {t.category}
+                  {t.isRecurring && (
+                    <span className="recurring-badge" title="Регулярный платёж">
+                      <RepeatIcon />
+                    </span>
+                  )}
+                </span>
+                <span className="date">{t.date}</span>
+                <span className="description">{t.description}</span>
+                <div className="actions">
+                  <button
+                    onClick={() => onEdit(t.id)}
+                    disabled={isDeleting}
+                    aria-label="Изменить"
+                  >
+                    <EditIcon />
+                  </button>
+                  <button
+                    onClick={() => onDelete(t.id)}
+                    disabled={isDeleting}
+                    aria-label="Удалить"
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
           {items.length === 0 && (
             <li className="empty">Нет транзакций по заданному фильтру</li>
           )}

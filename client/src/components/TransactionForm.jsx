@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function TransactionForm({ initialValues, onSubmit, onCancel }) {
+export function TransactionForm({ initialValues, saving, onSubmit, onCancel }) {
   const [amount, setAmount] = useState(initialValues?.amount ?? "");
   const [type, setType] = useState(initialValues?.type ?? "expense");
   const [category, setCategory] = useState(initialValues?.category ?? "");
@@ -14,11 +14,11 @@ export function TransactionForm({ initialValues, onSubmit, onCancel }) {
     initialValues?.isRecurring ?? false,
   );
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
     if (!amount || !category) return;
 
-    onSubmit({
+    const ok = await onSubmit({
       amount: Number(amount),
       type,
       category,
@@ -27,7 +27,7 @@ export function TransactionForm({ initialValues, onSubmit, onCancel }) {
       isRecurring,
     });
 
-    if (!initialValues) {
+    if (ok && !initialValues) {
       setAmount("");
       setCategory("");
       setDescription("");
@@ -79,12 +79,12 @@ export function TransactionForm({ initialValues, onSubmit, onCancel }) {
       </div>
       <div className="form-actions">
         {initialValues && (
-          <button type="button" onClick={onCancel}>
+          <button type="button" onClick={onCancel} disabled={saving}>
             Отмена
           </button>
         )}
-        <button type="submit">
-          {initialValues ? "Сохранить" : "Добавить"}
+        <button type="submit" disabled={saving}>
+          {saving ? "Сохранение..." : initialValues ? "Сохранить" : "Добавить"}
         </button>
       </div>
     </form>

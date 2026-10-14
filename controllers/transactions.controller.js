@@ -64,7 +64,6 @@ async function getAll(req, res) {
     where.category = { [Op.iLike]: category };
   }
   if (typeof search === "string" && search.trim() !== "") {
-    // % и _ – спецсимволы LIKE, экранируем их, чтобы искались как обычные символы
     const escaped = search.trim().replace(/[\\%_]/g, "\\$&");
     const pattern = `%${escaped}%`;
     where[Op.or] = [
