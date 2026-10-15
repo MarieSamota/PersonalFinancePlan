@@ -17,6 +17,21 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: message });
   }
 
+  if (err.name === "ValidationError") {
+    const message = Object.values(err.errors)
+      .map((e) => e.message)
+      .join("; ");
+    return res.status(400).json({ error: message });
+  }
+
+  if (err.name === "CastError") {
+    const message =
+      err.kind === "ObjectId"
+        ? "Некорректный id"
+        : (err.reason?.message ?? `Некорректное значение поля ${err.path}`);
+    return res.status(400).json({ error: message });
+  }
+
   res
     .status(err.status || 500)
     .json({ error: err.message || "Внутренняя ошибка сервера" });
