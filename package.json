@@ -9,7 +9,8 @@
     "db:migrate": "node -r dotenv/config ./node_modules/sequelize-cli/lib/sequelize db:migrate",
     "db:migrate:undo": "node -r dotenv/config ./node_modules/sequelize-cli/lib/sequelize db:migrate:undo",
     "db:seed": "node -r dotenv/config ./node_modules/sequelize-cli/lib/sequelize db:seed:all",
-    "db:seed:undo": "node -r dotenv/config ./node_modules/sequelize-cli/lib/sequelize db:seed:undo:all"
+    "db:seed:undo": "node -r dotenv/config ./node_modules/sequelize-cli/lib/sequelize db:seed:undo:all",
+    "goals:seed": "node scripts/goals-seed.js"
   },
   "keywords": [],
   "author": "",

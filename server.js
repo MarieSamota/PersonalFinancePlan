@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const transactionsRoutes = require("./routes/transactions.routes");
+const goalsRoutes = require("./routes/goals.routes");
 const authRoutes = require("./routes/auth.routes");
 const authController = require("./controllers/auth.controller");
 const authMiddleware = require("./middleware/auth");
@@ -13,6 +14,7 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 
 app.use("/transactions", authMiddleware, transactionsRoutes);
+app.use("/goals", authMiddleware, goalsRoutes);
 app.use("/auth", authRoutes);
 app.get("/profile", authMiddleware, authController.profile);
 
