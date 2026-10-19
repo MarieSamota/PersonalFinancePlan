@@ -47,7 +47,7 @@ module.exports = (sequelize, DataTypes) => {
           },
           notEmpty: { msg: "Название цели обязательно" },
           len: {
-            args: [1, 100],
+            args: [0, 100],
             msg: "Название цели – не длиннее 100 символов",
           },
         },

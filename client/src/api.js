@@ -40,6 +40,16 @@ export const updateItem = (id, updated) =>
   api.put(`/transactions/${id}`, updated);
 export const deleteItem = (id) => api.delete(`/transactions/${id}`);
 
+export function getTokenUser(token) {
+  try {
+    const payload = token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
+    const { id, email } = JSON.parse(atob(payload));
+    return { id, email };
+  } catch {
+    return null;
+  }
+}
+
 export function getErrorMessage(err) {
   if (err.response) {
     if (err.response.status >= 500) {
