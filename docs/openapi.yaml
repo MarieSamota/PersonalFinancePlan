@@ -1,0 +1,1141 @@
+tags:
+  - name: Auth
+    description: Регистрация, подтверждение email, вход и профиль
+  - name: Transactions
+    description: Доходы и расходы текущего пользователя
+  - name: Goals
+    description: Цели накоплений, взносы и теги
+  - name: Budgets
+    description: Месячные лимиты расходов по категориям
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Токен из ответа POST /auth/login
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Идентификатор записи (целое число больше нуля)
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+
+  responses:
+    ValidationError:
+      description: Тело запроса не прошло валидацию
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationError"
+    BadId:
+      description: Некорректный id в пути или битый JSON
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            badId:
+              value:
+                error: Некорректный id
+            badJson:
+              value:
+                error: Некорректный JSON в теле запроса
+    Unauthorized:
+      description: Нет токена или токен неверный либо просрочен
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: Токен не предоставлен
+    NotFound:
+      description: Запись не найдена или принадлежит другому пользователю
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            error: Запись не найдена
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Текст ошибки для пользователя
+      required: [error]
+
+    ValidationError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Все сообщения через «; »
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+      example:
+        error: Поле amount должно быть числом; Поле category обязательно
+        details:
+          - field: amount
+            message: Поле amount должно быть числом
+          - field: category
+            message: Поле category обязательно
+
+    Credentials:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: maria@example.com
+        password:
+          type: string
+          example: supersecret1
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        email:
+          type: string
+          example: maria@example.com
+        isVerified:
+          type: boolean
+          example: true
+
+    Money:
+      type: number
+      minimum: 0.01
+      maximum: 9999999999
+      multipleOf: 0.01
+      description: Сумма больше нуля, не больше двух знаков после запятой
+
+    Date:
+      type: string
+      format: date
+      description: Дата ГГГГ-ММ-ДД в диапазоне 1900–2099
+      example: "2026-10-20"
+
+    TransactionFields:
+      type: object
+      additionalProperties: false
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+        type:
+          type: string
+          enum: [income, expense]
+        category:
+          type: string
+          maxLength: 255
+        date:
+          $ref: "#/components/schemas/Date"
+        description:
+          type: string
+          maxLength: 255
+        isRecurring:
+          type: boolean
+
+    TransactionInput:
+      description: >
+        Тело POST и PUT. Обязательны amount, type, category. При PUT непереданные
+        поля получают значения по умолчанию: date – сегодня, description – "",
+        isRecurring – false.
+      allOf:
+        - $ref: "#/components/schemas/TransactionFields"
+      required: [amount, type, category]
+      example:
+        amount: 12.5
+        type: expense
+        category: Кофе
+        date: "2026-10-20"
+        description: Капучино
+        isRecurring: false
+
+    TransactionPatch:
+      description: Тело PATCH – любое непустое подмножество полей
+      allOf:
+        - $ref: "#/components/schemas/TransactionFields"
+      minProperties: 1
+      example:
+        description: Латте
+
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 54
+        userId:
+          type: integer
+          example: 5
+        amount:
+          type: number
+          example: 12.5
+        type:
+          type: string
+          enum: [income, expense]
+          example: expense
+        category:
+          type: string
+          example: Кофе
+        date:
+          type: string
+          format: date
+          example: "2026-10-20"
+        description:
+          type: string
+          example: Капучино
+        isRecurring:
+          type: boolean
+          example: false
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GoalFields:
+      type: object
+      additionalProperties: false
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        targetAmount:
+          type: number
+          minimum: 1
+          maximum: 9999999999
+          multipleOf: 0.01
+        deadline:
+          type: string
+          format: date
+          nullable: true
+        tags:
+          type: array
+          description: Приводятся к нижнему регистру, повторы удаляются
+          items:
+            type: string
+            maxLength: 50
+
+    GoalInput:
+      description: >
+        Тело POST и PUT. Обязательны title и targetAmount. При PUT непереданные
+        deadline и tags сбрасываются в null и [].
+      allOf:
+        - $ref: "#/components/schemas/GoalFields"
+      required: [title, targetAmount]
+      example:
+        title: Новый ноутбук
+        targetAmount: 2500
+        deadline: "2027-03-01"
+        tags: [техника, учёба]
+
+    GoalPatch:
+      allOf:
+        - $ref: "#/components/schemas/GoalFields"
+      minProperties: 1
+      example:
+        deadline: "2027-06-01"
+
+    Contribution:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 23
+        goalId:
+          type: integer
+          example: 16
+        amount:
+          type: number
+          example: 300
+        date:
+          type: string
+          format: date
+          example: "2026-10-10"
+        note:
+          type: string
+          example: подработка
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ContributionInput:
+      type: object
+      additionalProperties: false
+      required: [amount]
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+        date:
+          $ref: "#/components/schemas/Date"
+        note:
+          type: string
+          maxLength: 200
+      example:
+        amount: 300
+        date: "2026-10-10"
+        note: подработка
+
+    ContributionPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        amount:
+          $ref: "#/components/schemas/Money"
+        date:
+          $ref: "#/components/schemas/Date"
+        note:
+          type: string
+          maxLength: 200
+      example:
+        amount: 350
+
+    Goal:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 16
+        userId:
+          type: integer
+          example: 5
+        title:
+          type: string
+          example: Новый ноутбук
+        targetAmount:
+          type: number
+          example: 2500
+        deadline:
+          type: string
+          format: date
+          nullable: true
+          example: "2027-03-01"
+        tags:
+          type: array
+          items:
+            type: string
+          example: [техника, учёба]
+        savedAmount:
+          type: number
+          description: Сумма взносов (вычисляется)
+          example: 300
+        progress:
+          type: integer
+          description: Процент выполнения 0–100 (вычисляется)
+          example: 12
+        status:
+          type: string
+          enum: [active, reached]
+          example: active
+        contributions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contribution"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    GoalPage:
+      type: object
+      properties:
+        goals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Goal"
+        total:
+          type: integer
+          example: 1
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 5
+
+    MonthStat:
+      type: object
+      properties:
+        month:
+          type: string
+          example: 2026-10
+        total:
+          type: number
+          example: 350
+        count:
+          type: integer
+          example: 1
+
+    BudgetFields:
+      type: object
+      additionalProperties: false
+      properties:
+        category:
+          type: string
+          maxLength: 100
+        limitAmount:
+          $ref: "#/components/schemas/Money"
+        month:
+          type: string
+          pattern: "^(19|20)\\d{2}-(0[1-9]|1[0-2])$"
+          description: Месяц ГГГГ-ММ
+
+    BudgetInput:
+      description: Тело POST и PUT – все три поля обязательны
+      allOf:
+        - $ref: "#/components/schemas/BudgetFields"
+      required: [category, limitAmount, month]
+      example:
+        category: Продукты
+        limitAmount: 300
+        month: 2026-10
+
+    BudgetPatch:
+      allOf:
+        - $ref: "#/components/schemas/BudgetFields"
+      minProperties: 1
+      example:
+        limitAmount: 400
+
+    Budget:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 18
+        userId:
+          type: integer
+          example: 5
+        category:
+          type: string
+          example: Продукты
+        limitAmount:
+          type: number
+          example: 300
+        month:
+          type: string
+          example: 2026-10
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Регистрация
+      description: Создаёт пользователя. Ссылка подтверждения email печатается в консоли сервера.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "201":
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+              example:
+                id: 5
+                email: maria@example.com
+                isVerified: false
+        "400":
+          description: Неверные данные или email уже занят
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: Пользователь с таким email уже зарегистрирован
+
+  /auth/verify-email/{token}:
+    get:
+      tags: [Auth]
+      summary: Подтверждение email
+      security: []
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Email подтверждён
+          content:
+            application/json:
+              example:
+                message: Email подтверждён, теперь можно войти
+        "400":
+          description: Неверный или уже использованный токен
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Вход, получение JWT
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Credentials"
+      responses:
+        "200":
+          description: Токен на 1 час
+          content:
+            application/json:
+              example:
+                token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "400":
+          description: Неверный формат email или пустой пароль
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Неверный email или пароль
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: Неверный email или пароль
+        "403":
+          description: Email не подтверждён
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: Email не подтверждён
+
+  /profile:
+    get:
+      tags: [Auth]
+      summary: Профиль текущего пользователя
+      responses:
+        "200":
+          description: Данные пользователя из токена
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /transactions:
+    get:
+      tags: [Transactions]
+      summary: Список транзакций пользователя
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [income, expense]
+        - name: category
+          in: query
+          description: Точное совпадение категории без учёта регистра
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Поиск подстроки в категории и описании
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Массив транзакций (по возрастанию id)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Transactions]
+      summary: Создать транзакцию
+      description: userId берётся из токена, передавать его в теле нельзя.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Создана
+          headers:
+            Location:
+              description: URI новой транзакции
+              schema:
+                type: string
+                example: /transactions/54
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /transactions/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Transactions]
+      summary: Транзакция по id
+      responses:
+        "200":
+          description: Транзакция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Transactions]
+      summary: Полная замена транзакции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "200":
+          description: Обновлённая транзакция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Transactions]
+      summary: Частичное обновление транзакции
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionPatch"
+      responses:
+        "200":
+          description: Обновлённая транзакция
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Transactions]
+      summary: Удалить транзакцию
+      responses:
+        "204":
+          description: Удалена, тела ответа нет
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /goals:
+    get:
+      tags: [Goals]
+      summary: Список целей с пагинацией и фильтрами
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: tag
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          description: Подстрока в названии
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, reached]
+      responses:
+        "200":
+          description: Страница целей
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GoalPage"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Goals]
+      summary: Создать цель
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Создана
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /goals/16
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /goals/stats:
+    get:
+      tags: [Goals]
+      summary: Сумма и число взносов по месяцам
+      responses:
+        "200":
+          description: Статистика
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonthStat"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /goals/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Goals]
+      summary: Цель по id (со взносами)
+      responses:
+        "200":
+          description: Цель
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Goals]
+      summary: Полная замена цели
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "200":
+          description: Обновлённая цель
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      tags: [Goals]
+      summary: Частичное обновление цели
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalPatch"
+      responses:
+        "200":
+          description: Обновлённая цель
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Goals]
+      summary: Удалить цель вместе со взносами
+      responses:
+        "204":
+          description: Удалена
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /goals/{id}/contributions:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Goals]
+      summary: Добавить взнос в цель
+      description: Если date не передана – сегодняшняя дата. В ответе вся цель с пересчитанным savedAmount.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionInput"
+      responses:
+        "201":
+          description: Цель с новым взносом
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /goals/{id}/contributions/{contributionId}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - name: contributionId
+        in: path
+        required: true
+        schema:
+          type: integer
+          minimum: 1
+    patch:
+      tags: [Goals]
+      summary: Изменить взнос
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionPatch"
+      responses:
+        "200":
+          description: Цель с изменённым взносом
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags: [Goals]
+      summary: Удалить взнос
+      responses:
+        "200":
+          description: Цель без удалённого взноса
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /goals/{id}/tags:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    post:
+      tags: [Goals]
+      summary: Добавить тег
+      description: Тег приводится к нижнему регистру; повторный тег не дублируется.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [tag]
+              properties:
+                tag:
+                  type: string
+                  maxLength: 50
+            example:
+              tag: Учёба
+      responses:
+        "200":
+          description: Цель с тегом
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /goals/{id}/tags/{tag}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+      - name: tag
+        in: path
+        required: true
+        schema:
+          type: string
+        example: учёба
+    delete:
+      tags: [Goals]
+      summary: Удалить тег
+      responses:
+        "200":
+          description: Цель без тега
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /budgets:
+    get:
+      tags: [Budgets]
+      summary: Список бюджетов пользователя
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+          example: 2026-10
+        - name: category
+          in: query
+          description: Точное совпадение без учёта регистра
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Массив бюджетов (новые месяцы первыми)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Budget"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Budgets]
+      summary: Создать бюджет
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetInput"
+      responses:
+        "201":
+          description: Создан
+          headers:
+            Location:
+              schema:
+                type: string
+                example: /budgets/18
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Бюджет на эту категорию и месяц уже есть
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                error: Бюджет на категорию «Продукты» за 2026-10 уже существует
+
+  /budgets/{id}:
+    parameters:
+      - $ref: "#/components/parameters/Id"
+    get:
+      tags: [Budgets]
+      summary: Бюджет по id
+      responses:
+        "200":
+          description: Бюджет
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags: [Budgets]
+      summary: Полная замена бюджета
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetInput"
+      responses:
+        "200":
+          description: Обновлённый бюджет
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Такой бюджет уже есть
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    patch:
+      tags: [Budgets]
+      summary: Частичное обновление бюджета
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetPatch"
+      responses:
+        "200":
+          description: Обновлённый бюджет
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+        "400":
+          $ref: "#/components/responses/ValidationError"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Такой бюджет уже есть
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      tags: [Budgets]
+      summary: Удалить бюджет
+      responses:
+        "204":
+          description: Удалён
+        "400":
+          $ref: "#/components/responses/BadId"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"

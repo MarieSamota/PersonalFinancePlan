@@ -1,40 +1,13 @@
 const { Op } = require("sequelize");
 const db = require("../models/index");
+const { parseId } = require("../utils/validators");
 
 const { Goal, GoalContribution, sequelize } = db;
 
-const GOAL_FIELDS = ["title", "targetAmount", "deadline", "tags"];
-const CONTRIBUTION_FIELDS = ["amount", "date", "note"];
-const MAX_INT = 2147483647;
-
-function pick(body, fields) {
-  const data = {};
-  for (const field of fields) {
-    if (body?.[field] !== undefined) {
-      data[field] = body[field];
-    }
-  }
-  return data;
-}
-
-function parseId(value) {
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0 && id <= MAX_INT ? id : null;
-}
+const MAX_PAGE = 100000;
 
 function normalizeTag(tag) {
   return String(tag).trim().toLowerCase();
-}
-
-function goalData(body) {
-  const data = pick(body, GOAL_FIELDS);
-  if (data.tags !== undefined) {
-    if (!Array.isArray(data.tags)) {
-      return { error: "Поле tags должно быть массивом строк" };
-    }
-    data.tags = [...new Set(data.tags.map(normalizeTag).filter(Boolean))];
-  }
-  return { data };
 }
 
 function escapeLike(text) {
@@ -57,7 +30,10 @@ function goalNotFound(res) {
 
 async function getAll(req, res) {
   const { tag, search, status } = req.query;
-  const page = Math.max(1, Number.parseInt(req.query.page, 10) || 1);
+  const page = Math.min(
+    MAX_PAGE,
+    Math.max(1, Number.parseInt(req.query.page, 10) || 1),
+  );
   const limit = Math.min(
     50,
     Math.max(1, Number.parseInt(req.query.limit, 10) || 10),
@@ -134,14 +110,9 @@ async function getOne(req, res) {
 }
 
 async function create(req, res) {
-  const { data, error } = goalData(req.body);
-  if (error) {
-    return res.status(400).json({ error });
-  }
-
-  const created = await Goal.create({ ...data, userId: req.user.id });
+  const created = await Goal.create({ ...req.body, userId: req.user.id });
   const goal = await Goal.findOwn(created.id, req.user.id);
-  res.status(201).json(goal);
+  res.status(201).location(`/goals/${goal.id}`).json(goal);
 }
 
 async function update(req, res) {
@@ -150,17 +121,12 @@ async function update(req, res) {
     return badId(res);
   }
 
-  const { data, error } = goalData(req.body);
-  if (error) {
-    return res.status(400).json({ error });
-  }
-
   const goal = await Goal.findOwn(id, req.user.id);
   if (!goal) {
     return goalNotFound(res);
   }
 
-  await goal.update(data);
+  await goal.update(req.body);
   res.status(200).json(goal);
 }
 
@@ -176,7 +142,7 @@ async function remove(req, res) {
   }
 
   await goal.destroy();
-  res.status(200).json(goal);
+  res.status(204).end();
 }
 
 async function addContribution(req, res) {
@@ -190,10 +156,7 @@ async function addContribution(req, res) {
     return goalNotFound(res);
   }
 
-  await GoalContribution.create({
-    ...pick(req.body, CONTRIBUTION_FIELDS),
-    goalId: goal.id,
-  });
+  await GoalContribution.create({ ...req.body, goalId: goal.id });
   res.status(201).json(await Goal.findOwn(id, req.user.id));
 }
 
@@ -204,20 +167,13 @@ async function updateContribution(req, res) {
     return badId(res);
   }
 
-  const changes = pick(req.body, CONTRIBUTION_FIELDS);
-  if (Object.keys(changes).length === 0) {
-    return res
-      .status(400)
-      .json({ error: "Передайте хотя бы одно поле: amount, date или note" });
-  }
-
   const goal = await Goal.findOwn(id, req.user.id);
   const contribution = goal?.contributions.find((c) => c.id === contributionId);
   if (!contribution) {
     return res.status(404).json({ error: "Цель или взнос не найдены" });
   }
 
-  await contribution.update(changes);
+  await contribution.update(req.body);
   res.status(200).json(goal);
 }
 
@@ -244,10 +200,7 @@ async function addTag(req, res) {
     return badId(res);
   }
 
-  const tag = typeof req.body?.tag === "string" ? normalizeTag(req.body.tag) : "";
-  if (tag === "") {
-    return res.status(400).json({ error: "Поле tag должно быть непустой строкой" });
-  }
+  const { tag } = req.body;
 
   const goal = await Goal.findOwn(id, req.user.id);
   if (!goal) {
