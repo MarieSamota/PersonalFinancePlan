@@ -16,6 +16,10 @@ app.locals.formatDate = (date) => {
   const [year, month, day] = String(date).split("-");
   return `${day}.${month}.${year}`;
 };
+app.locals.formatAmount = (amount) => {
+  const [whole, fraction = ""] = String(amount).split(".");
+  return `${whole}.${fraction.padEnd(2, "0").slice(0, 2)}`;
+};
 
 app.use(express.static("public"));
 
@@ -30,6 +34,10 @@ app.use(notFound);
 app.use(errorHandler);
 
 const PORT = 3000;
-app.listen(PORT, () => {
+app.listen(PORT, (err) => {
+  if (err) {
+    console.error(`Не удалось запустить сервер: порт ${PORT} недоступен`);
+    process.exit(1);
+  }
   console.log(`Server running on http://localhost:${PORT}`);
 });

@@ -9,7 +9,7 @@
   <div class="info-rows">
     <div class="info-row">
       <span class="k">Сумма</span>
-      <span class="amount <%= transaction.type %>"><%= transaction.type === "income" ? "+" : "-" %><%= transaction.amount %></span>
+      <span class="amount <%= transaction.type %>"><%= transaction.type === "income" ? "+" : "-" %><%= formatAmount(transaction.amount) %></span>
     </div>
     <div class="info-row">
       <span class="k">Тип</span>

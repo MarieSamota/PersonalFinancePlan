@@ -1,17 +1,24 @@
-const fs = require("fs");
+const fs = require("fs/promises");
 const path = require("path");
 
 const logsDir = path.join(__dirname, "..", "logs");
-fs.mkdirSync(logsDir, { recursive: true });
+const logFile = path.join(logsDir, "access.log");
 
-const logStream = fs.createWriteStream(path.join(logsDir, "access.log"), {
-  flags: "a",
-});
+async function writeLine(line) {
+  try {
+    await fs.appendFile(logFile, `${line}\n`);
+  } catch {
+    await fs.mkdir(logsDir, { recursive: true });
+    await fs.appendFile(logFile, `${line}\n`);
+  }
+}
 
 function requestLogger(req, res, next) {
   const line = `[${new Date().toLocaleString("ru-RU")}] ${req.method} ${req.originalUrl}`;
   console.log(line);
-  logStream.write(`${line}\n`);
+  writeLine(line).catch(() => {
+    console.error("Не удалось записать запрос в файл журнала");
+  });
   next();
 }
 

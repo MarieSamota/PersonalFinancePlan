@@ -17,7 +17,7 @@
             <% } %>
           </div>
         </div>
-        <div class="tx-amount <%= t.type %>"><%= t.type === "income" ? "+" : "-" %><%= t.amount %></div>
+        <div class="tx-amount <%= t.type %>"><%= t.type === "income" ? "+" : "-" %><%= formatAmount(t.amount) %></div>
         <span class="chev"></span>
       </a>
     <% }); %>

@@ -6,7 +6,7 @@ const { Transaction } = db;
 
 const ALLOWED_TYPES = ["income", "expense"];
 const MAX_LENGTH = 50;
-const MAX_AMOUNT = 999999999;
+const MAX_AMOUNT_DIGITS = 15;
 const MAX_ID = 2147483647;
 const MAX_YEARS = 125;
 const HAS_LETTER = /\p{L}/u;
@@ -83,8 +83,8 @@ async function addSubmit(req, res) {
     errors.push(`Сумма не должна быть длиннее ${MAX_LENGTH} символов`);
   } else if (!AMOUNT_PATTERN.test(amount)) {
     errors.push("Сумма: только цифры и точка, не больше двух знаков после точки");
-  } else if (amountNumber > MAX_AMOUNT) {
-    errors.push(`Сумма не должна быть больше ${MAX_AMOUNT}`);
+  } else if (amount.split(".")[0].replace(/^0+/, "").length > MAX_AMOUNT_DIGITS) {
+    errors.push(`Сумма не должна быть больше ${"9".repeat(MAX_AMOUNT_DIGITS)}`);
   }
   if (!ALLOWED_TYPES.includes(type)) {
     errors.push("Выберите тип: доход или расход");
@@ -120,7 +120,7 @@ async function addSubmit(req, res) {
   }
 
   await Transaction.create({
-    amount: amountNumber,
+    amount,
     type,
     category,
     date: date || new Date().toISOString().slice(0, 10),
@@ -132,18 +132,21 @@ async function addSubmit(req, res) {
 }
 
 async function logs(req, res) {
+  const logFile = path.join(__dirname, "..", "logs", "access.log");
   let content = "";
+  let problem = "";
   try {
-    content = await fs.readFile(
-      path.join(__dirname, "..", "logs", "access.log"),
-      "utf8",
+    content = await fs.readFile(logFile, "utf8");
+  } catch {
+    const exists = await fs.stat(logFile).then(
+      () => true,
+      () => false,
     );
-  } catch (err) {
-    if (err.code !== "ENOENT") {
-      throw err;
+    if (exists) {
+      problem = "Не удалось прочитать файл журнала";
     }
   }
-  res.render("admin-logs", { title: "Логи запросов", content });
+  res.render("admin-logs", { title: "Логи запросов", content, problem });
 }
 
 module.exports = { login, index, item, addForm, addSubmit, logs };

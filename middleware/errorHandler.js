@@ -1,5 +1,5 @@
 function isApiRequest(req) {
-  return req.originalUrl.startsWith("/transactions");
+  return /^\/transactions(?:[/?]|$)/.test(req.originalUrl);
 }
 
 function notFound(req, res) {
@@ -12,8 +12,13 @@ function notFound(req, res) {
 function errorHandler(err, req, res, next) {
   console.error(err);
 
+  const status = err.status >= 400 && err.status < 500 ? err.status : 500;
+
   if (!isApiRequest(req)) {
-    return res.status(500).render("500", { title: "Ошибка сервера" });
+    if (status === 500) {
+      return res.status(500).render("500", { title: "Ошибка сервера" });
+    }
+    return res.status(status).render("404", { title: "Страница не найдена" });
   }
 
   if (err.type === "entity.parse.failed" || err instanceof SyntaxError) {
@@ -28,9 +33,9 @@ function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: message });
   }
 
-  res
-    .status(err.status || 500)
-    .json({ error: err.message || "Внутренняя ошибка сервера" });
+  res.status(status).json({
+    error: status === 500 ? "Внутренняя ошибка сервера" : err.message,
+  });
 }
 
 module.exports = { notFound, errorHandler };
