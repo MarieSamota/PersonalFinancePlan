@@ -112,12 +112,12 @@ export function TransactionList({
             const isDeleting = deletingIds.includes(t.id);
             return (
               <li key={t.id} className={isDeleting ? `${t.type} pending` : t.type}>
-                <span className="amount">
+                <span className="amount" title={t.amount}>
                   {t.type === "income" ? "+" : "-"}
                   {Number(t.amount).toLocaleString("ru-RU")}
                 </span>
-                <span className="category">
-                  {t.category}
+                <span className="category" title={t.category}>
+                  <span className="category-text">{t.category}</span>
                   {t.isRecurring && (
                     <span className="recurring-badge" title="Регулярный платёж">
                       <RepeatIcon />
@@ -125,7 +125,9 @@ export function TransactionList({
                   )}
                 </span>
                 <span className="date">{t.date}</span>
-                <span className="description">{t.description}</span>
+                <span className="description" title={t.description}>
+                  {t.description}
+                </span>
                 <div className="actions">
                   <button
                     onClick={() => onEdit(t.id)}

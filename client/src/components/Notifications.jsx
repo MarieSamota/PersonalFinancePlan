@@ -5,13 +5,19 @@ export function Notifications() {
   const [toasts, setToasts] = useState([]);
   const nextId = useRef(1);
 
+  function dismiss(id) {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }
+
   useEffect(() => {
-    function push(text, kind) {
+    function push(text, kind, sticky = false) {
       const id = nextId.current++;
-      setToasts((prev) => [...prev, { id, text, kind }]);
-      setTimeout(() => {
-        setToasts((prev) => prev.filter((t) => t.id !== id));
-      }, 5000);
+      setToasts((prev) => [...prev, { id, text, kind, sticky }]);
+      if (!sticky) {
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 5000);
+      }
     }
 
     function handleOnline({ email }) {
@@ -26,6 +32,7 @@ export function Notifications() {
       push(
         `${from} напоминает рассчитаться в купийке «${planTitle}»`,
         "reminder",
+        true,
       );
     }
 
@@ -50,7 +57,12 @@ export function Notifications() {
     <div className="toasts" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={`toast ${t.kind}`}>
-          {t.text}
+          <span>{t.text}</span>
+          {t.sticky && (
+            <button className="toast-read" onClick={() => dismiss(t.id)}>
+              Прочитано
+            </button>
+          )}
         </div>
       ))}
     </div>

@@ -55,12 +55,14 @@ function App() {
           </button>
         </nav>
         <div className="header-right">
-          <span
-            className={`connection ${connected ? "online" : ""}`}
-            title={user?.email}
-          >
-            {connected ? "в сети" : "нет связи"}
-          </span>
+          <div className="current-user">
+            <span className="user-email" title={user?.email}>
+              {user?.email}
+            </span>
+            <span className={`connection ${connected ? "online" : ""}`}>
+              {connected ? "в сети" : "нет связи"}
+            </span>
+          </div>
           <button onClick={handleLogout}>Выйти</button>
         </div>
       </header>
