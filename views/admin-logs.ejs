@@ -4,6 +4,10 @@
   <h1>Логи запросов</h1>
 </div>
 
+<% if (notice) { %>
+  <p class="errors"><%= notice %></p>
+<% } %>
+
 <% if (problem) { %>
   <p class="errors"><%= problem %></p>
 <% } else if (content) { %>

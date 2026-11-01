@@ -1,5 +1,14 @@
+const { ConnectionError, DatabaseError } = require("sequelize");
+
 function isApiRequest(req) {
   return /^\/transactions(?:[/?]|$)/.test(req.originalUrl);
+}
+
+function describeServerError(err) {
+  if (err instanceof ConnectionError || err instanceof DatabaseError) {
+    return "Проблема с базой данных";
+  }
+  return "Внутренняя ошибка сервера. Попробуйте обновить страницу или вернуться позже";
 }
 
 function notFound(req, res) {
@@ -16,7 +25,10 @@ function errorHandler(err, req, res, next) {
 
   if (!isApiRequest(req)) {
     if (status === 500) {
-      return res.status(500).render("500", { title: "Ошибка сервера" });
+      return res.status(500).render("500", {
+        title: "Ошибка сервера",
+        message: describeServerError(err),
+      });
     }
     return res.status(status).render("404", { title: "Страница не найдена" });
   }
@@ -34,7 +46,7 @@ function errorHandler(err, req, res, next) {
   }
 
   res.status(status).json({
-    error: status === 500 ? "Внутренняя ошибка сервера" : err.message,
+    error: status === 500 ? describeServerError(err) : err.message,
   });
 }
 

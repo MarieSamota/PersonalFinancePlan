@@ -1,6 +1,10 @@
 const fs = require("fs/promises");
-const path = require("path");
 const db = require("../models/index");
+const {
+  logFile,
+  describeLogProblem,
+  takeDeletedNotice,
+} = require("../middleware/requestLogger");
 
 const { Transaction } = db;
 
@@ -132,21 +136,19 @@ async function addSubmit(req, res) {
 }
 
 async function logs(req, res) {
-  const logFile = path.join(__dirname, "..", "logs", "access.log");
   let content = "";
   let problem = "";
   try {
     content = await fs.readFile(logFile, "utf8");
   } catch {
-    const exists = await fs.stat(logFile).then(
-      () => true,
-      () => false,
-    );
-    if (exists) {
-      problem = "Не удалось прочитать файл журнала";
-    }
+    problem = await describeLogProblem();
   }
-  res.render("admin-logs", { title: "Логи запросов", content, problem });
+  res.render("admin-logs", {
+    title: "Логи запросов",
+    content,
+    problem,
+    notice: takeDeletedNotice(),
+  });
 }
 
 module.exports = { login, index, item, addForm, addSubmit, logs };

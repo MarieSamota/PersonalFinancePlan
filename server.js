@@ -36,7 +36,11 @@ app.use(errorHandler);
 const PORT = 3000;
 app.listen(PORT, (err) => {
   if (err) {
-    console.error(`Не удалось запустить сервер: порт ${PORT} недоступен`);
+    const reason =
+      err.code === "EADDRINUSE"
+        ? `порт ${PORT} уже занят (возможно, сервер уже запущен в другом терминале)`
+        : `порт ${PORT} недоступен`;
+    console.error(`Не удалось запустить сервер: ${reason}`);
     process.exit(1);
   }
   console.log(`Server running on http://localhost:${PORT}`);
