@@ -159,6 +159,27 @@
 пользователями (например, обычное окно и окно инкогнито), создать купийку
 в одном и вступить по коду в другом.
 
+## Запуск в Docker (Лабораторная работа 8)
+
+Нужен Docker Desktop или Docker Engine с Compose.
+
+1. Скопировать `.env.example` в `.env`, задать `JWT_SECRET`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+2. Собрать образы и запустить приложение:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+3. Открыть клиент на `http://localhost`. Сервер работает на `http://localhost:3000`.
+
+| Сервис | Образ | Порт |
+| --- | --- | --- |
+| `frontend` | сборка из `client/Dockerfile`, nginx | 80 |
+| `backend` | сборка из `Dockerfile`, Node.js | 3000 |
+| `db` | `postgres:15-alpine` | только внутри сети Docker |
+
+Миграции выполняются при старте `backend`, данные БД хранятся в томе `pgdata`. Ссылка подтверждения email выводится в логи: `docker-compose logs backend`. Команда `docker-compose down` останавливает контейнеры и сохраняет данные, `docker-compose down -v` удаляет их вместе с томом.
+
 ## Клиент (`client/`)
 
 React-приложение на Vite. Вход по email и паролю, список транзакций
