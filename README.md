@@ -163,7 +163,7 @@
 
 Нужен Docker Desktop или Docker Engine с Compose.
 
-1. Скопировать `.env.example` в `.env`, задать `JWT_SECRET`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`.
+1. Скопировать `.env.example` в `.env`, задать `JWT_SECRET`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `PGADMIN_EMAIL`, `PGADMIN_PASSWORD`.
 2. Собрать образы и запустить приложение:
 
    ```bash
@@ -177,8 +177,11 @@
 | `frontend` | сборка из `client/Dockerfile`, nginx | 80 |
 | `backend` | сборка из `Dockerfile`, Node.js | 3000 |
 | `db` | `postgres:15-alpine` | только внутри сети Docker |
+| `pgadmin` | `dpage/pgadmin4` | 5050 |
 
 Миграции выполняются при старте `backend`, данные БД хранятся в томе `pgdata`. Ссылка подтверждения email выводится в логи: `docker-compose logs backend`. Команда `docker-compose down` останавливает контейнеры и сохраняет данные, `docker-compose down -v` удаляет их вместе с томом.
+
+Веб-интерфейс pgAdmin открывается на `http://localhost:5050`, вход по `PGADMIN_EMAIL` и `PGADMIN_PASSWORD`. Для подключения к базе указать хост `db`, порт 5432 и значения `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
 
 ## Клиент (`client/`)
 
