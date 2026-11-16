@@ -4,3 +4,4 @@ client
 .env
 logs
 *.log
+pgadmin
