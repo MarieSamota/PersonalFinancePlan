@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const db = require("../models/index");
-const { parseId } = require("../utils/validators");
+const { parseId, escapeLike } = require("../utils/validators");
 
 const { Transaction } = db;
 
@@ -23,8 +23,7 @@ async function getAll(req, res) {
     where.category = { [Op.iLike]: category };
   }
   if (typeof search === "string" && search.trim() !== "") {
-    const escaped = search.trim().replace(/[\\%_]/g, "\\$&");
-    const pattern = `%${escaped}%`;
+    const pattern = `%${escapeLike(search.trim())}%`;
     where[Op.or] = [
       { category: { [Op.iLike]: pattern } },
       { description: { [Op.iLike]: pattern } },

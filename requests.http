@@ -1,54 +1,10 @@
 @baseUrl = http://localhost:3000
 @token = {{login.response.body.$.token}}
+@txId = {{createTx.response.body.$.id}}
+@goalId = {{createGoal.response.body.$.id}}
+@budgetId = {{createBudget.response.body.$.id}}
 
-### Регистрация
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "maria@example.com",
-  "password": "supersecret1"
-}
-
-### Повторная регистрация тем же email (ожидается 400)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "maria@example.com",
-  "password": "supersecret1"
-}
-
-### Регистрация без пароля (ожидается 400)
-POST {{baseUrl}}/auth/register
-Content-Type: application/json
-
-{
-  "email": "broken@example.com"
-}
-
-### Вход до подтверждения email (ожидается 403)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "maria@example.com",
-  "password": "supersecret1"
-}
-
-### Вход с неверным паролем (ожидается 401)
-POST {{baseUrl}}/auth/login
-Content-Type: application/json
-
-{
-  "email": "maria@example.com",
-  "password": "неверный-пароль"
-}
-
-### Подтверждение email (вставь токен, который сервер напечатал в консоли после первой регистрации)
-GET {{baseUrl}}/auth/verify-email/ВСТАВЬ_ТОКЕН_ИЗ_КОНСОЛИ
-
-### Вход после подтверждения (ожидается 200 и токен)
+### Вход (ожидается 200 и токен) – выполнить первым
 # @name login
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -58,133 +14,148 @@ Content-Type: application/json
   "password": "supersecret1"
 }
 
-### Профиль с валидным токеном
-GET {{baseUrl}}/profile
-Authorization: Bearer {{token}}
-
-### Профиль без токена (ожидается 401)
-GET {{baseUrl}}/profile
-
-### Транзакции без токена (ожидается 401)
+### Запрос без токена (ожидается 401)
 GET {{baseUrl}}/transactions
 
-###
+### ТРАНЗАКЦИИ: Создать (ожидается 201 и заголовок Location)
+# @name createTx
+POST {{baseUrl}}/transactions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "amount": 12.5,
+  "type": "expense",
+  "category": "Кофе",
+  "date": "2026-10-20",
+  "description": "Капучино"
+}
+
+### Список своих транзакций (ожидается 200)
 GET {{baseUrl}}/transactions
 Authorization: Bearer {{token}}
 
-###
-GET {{baseUrl}}/transactions?type=expense
+### Список с фильтром и поиском (ожидается 200)
+GET {{baseUrl}}/transactions?type=expense&search=капуч
 Authorization: Bearer {{token}}
 
-###
-GET {{baseUrl}}/transactions?category=Продукты
+### Одна транзакция (ожидается 200)
+GET {{baseUrl}}/transactions/{{txId}}
 Authorization: Bearer {{token}}
 
-### Поиск по подстроке в категории и описании
-GET {{baseUrl}}/transactions?search=прод
+### PUT – полная замена: description и isRecurring сбросятся (ожидается 200)
+PUT {{baseUrl}}/transactions/{{txId}}
 Authorization: Bearer {{token}}
+Content-Type: application/json
 
-### Поиск без совпадений (ожидается пустой массив)
-GET {{baseUrl}}/transactions?search=несуществующее
+{
+  "amount": 15,
+  "type": "expense",
+  "category": "Кофе"
+}
+
+### PATCH – меняется только description (ожидается 200)
+PATCH {{baseUrl}}/transactions/{{txId}}
 Authorization: Bearer {{token}}
+Content-Type: application/json
 
-###
-GET {{baseUrl}}/transactions/1
+{
+  "description": "Латте"
+}
+
+### Неверные типы (ожидается 400 и details по полям)
+POST {{baseUrl}}/transactions
 Authorization: Bearer {{token}}
+Content-Type: application/json
 
-###
-GET {{baseUrl}}/transactions/999
+{
+  "amount": "100",
+  "type": "покупка",
+  "category": "   ",
+  "date": "2026-02-30"
+}
+
+### Пустой PATCH (ожидается 400)
+PATCH {{baseUrl}}/transactions/{{txId}}
 Authorization: Bearer {{token}}
+Content-Type: application/json
 
-###
+{}
+
+### Некорректный id (ожидается 400)
 GET {{baseUrl}}/transactions/abc
 Authorization: Bearer {{token}}
 
-###
-POST {{baseUrl}}/transactions
+### Удалить (ожидается 204)
+DELETE {{baseUrl}}/transactions/{{txId}}
+Authorization: Bearer {{token}}
+
+### Повторное удаление (ожидается 404)
+DELETE {{baseUrl}}/transactions/{{txId}}
+Authorization: Bearer {{token}}
+
+### ЦЕЛИ: Создать цель (ожидается 201)
+# @name createGoal
+POST {{baseUrl}}/goals
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 3500,
-  "type": "expense",
-  "category": "Кафе",
-  "date": "2026-09-02",
-  "description": "Обед с другом"
+  "title": "Новый ноутбук",
+  "targetAmount": 2500,
+  "deadline": "2027-03-01",
+  "tags": ["техника"]
 }
 
-###
-POST {{baseUrl}}/transactions
+### Список целей с пагинацией (ожидается 200)
+GET {{baseUrl}}/goals?page=1&limit=5
+Authorization: Bearer {{token}}
+
+### PATCH цели (ожидается 200)
+PATCH {{baseUrl}}/goals/{{goalId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 100000,
-  "type": "income",
-  "category": "Зарплата"
+  "deadline": "2027-06-01"
 }
 
-###
-POST {{baseUrl}}/transactions
+### Удалить цель (ожидается 204)
+DELETE {{baseUrl}}/goals/{{goalId}}
+Authorization: Bearer {{token}}
+
+### БЮДЖЕТЫ: Создать бюджет (ожидается 201)
+# @name createBudget
+POST {{baseUrl}}/budgets
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "type": "salary",
-  "category": ""
-}
-
-###
-POST {{baseUrl}}/transactions
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "amount": 500,
-}
-
-###
-PUT {{baseUrl}}/transactions/2
-Authorization: Bearer {{token}}
-Content-Type: application/json
-
-{
-  "amount": 45,
-  "type": "expense",
   "category": "Продукты",
-  "date": "2026-09-03",
-  "description": "Магазин у дома"
+  "limitAmount": 300,
+  "month": "2026-10"
 }
 
-###
-PUT {{baseUrl}}/transactions/999
+### Тот же бюджет ещё раз (ожидается 409)
+POST {{baseUrl}}/budgets
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": 10,
-  "type": "income",
-  "category": "Прочее"
+  "category": "Продукты",
+  "limitAmount": 500,
+  "month": "2026-10"
 }
 
-###
-PUT {{baseUrl}}/transactions/2
+### PATCH бюджета (ожидается 200)
+PATCH {{baseUrl}}/budgets/{{budgetId}}
 Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {
-  "amount": -5,
-  "type": "expense",
-  "category": "Продукты"
+  "limitAmount": 400
 }
 
-###
-DELETE {{baseUrl}}/transactions/3
+### Удалить бюджет (ожидается 204)
+DELETE {{baseUrl}}/budgets/{{budgetId}}
 Authorization: Bearer {{token}}
-
-### (повторный)
-DELETE {{baseUrl}}/transactions/3
-Authorization: Bearer {{token}}
-
-###
-GET {{baseUrl}}/

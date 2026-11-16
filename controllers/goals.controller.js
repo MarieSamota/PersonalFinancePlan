@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const db = require("../models/index");
-const { parseId } = require("../utils/validators");
+const { parseId, escapeLike } = require("../utils/validators");
 
 const { Goal, GoalContribution, sequelize } = db;
 
@@ -8,10 +8,6 @@ const MAX_PAGE = 100000;
 
 function normalizeTag(tag) {
   return String(tag).trim().toLowerCase();
-}
-
-function escapeLike(text) {
-  return text.replace(/[\\%_]/g, "\\$&");
 }
 
 function savedAmountCompare(operator) {

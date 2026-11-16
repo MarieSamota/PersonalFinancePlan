@@ -1,6 +1,6 @@
 "use strict";
 const { Model } = require("sequelize");
-const { isDateOnly, toNumber } = require("../utils/validators");
+const { toNumber } = require("../utils/validators");
 
 module.exports = (sequelize, DataTypes) => {
   class Goal extends Model {
@@ -32,25 +32,6 @@ module.exports = (sequelize, DataTypes) => {
       title: {
         type: DataTypes.STRING(100),
         allowNull: false,
-        set(value) {
-          this.setDataValue(
-            "title",
-            typeof value === "string" ? value.trim() : value,
-          );
-        },
-        validate: {
-          notNull: { msg: "Название цели обязательно" },
-          isString(value) {
-            if (typeof value !== "string") {
-              throw new Error("Название цели должно быть строкой");
-            }
-          },
-          notEmpty: { msg: "Название цели обязательно" },
-          len: {
-            args: [0, 100],
-            msg: "Название цели – не длиннее 100 символов",
-          },
-        },
       },
       targetAmount: {
         type: DataTypes.DECIMAL(12, 2),
@@ -58,34 +39,12 @@ module.exports = (sequelize, DataTypes) => {
         get() {
           return toNumber(this.getDataValue("targetAmount"));
         },
-        validate: {
-          notNull: { msg: "Сумма цели обязательна" },
-          isDecimal: { msg: "Сумма цели должна быть числом" },
-          min: { args: [1], msg: "Сумма цели должна быть не меньше 1" },
-          max: { args: [9999999999], msg: "Сумма цели слишком большая" },
-        },
       },
-      deadline: {
-        type: DataTypes.DATEONLY,
-        validate: {
-          dateFormat(value) {
-            if (!isDateOnly(value)) {
-              throw new Error("Срок должен быть в формате ГГГГ-ММ-ДД");
-            }
-          },
-        },
-      },
+      deadline: DataTypes.DATEONLY,
       tags: {
         type: DataTypes.ARRAY(DataTypes.STRING(50)),
         allowNull: false,
         defaultValue: [],
-        validate: {
-          tagLength(value) {
-            if (value.some((tag) => tag.length > 50)) {
-              throw new Error("Тег – не длиннее 50 символов");
-            }
-          },
-        },
       },
       savedAmount: {
         type: DataTypes.VIRTUAL,

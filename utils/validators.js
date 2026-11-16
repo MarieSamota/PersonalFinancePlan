@@ -24,4 +24,8 @@ function parseId(value) {
   return Number.isInteger(id) && id > 0 && id <= MAX_INT ? id : null;
 }
 
-module.exports = { isDateOnly, toNumber, parseId };
+function escapeLike(text) {
+  return text.replace(/[\\%_]/g, "\\$&");
+}
+
+module.exports = { isDateOnly, toNumber, parseId, escapeLike };

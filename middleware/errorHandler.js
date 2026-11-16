@@ -30,10 +30,6 @@ function errorHandler(err, req, res, next) {
       .json({ error: "Запись с такими данными уже существует" });
   }
 
-  if (err.name === "SequelizeForeignKeyConstraintError") {
-    return res.status(409).json({ error: "Связанная запись не найдена" });
-  }
-
   const status = err.status || 500;
   if (status >= 500) {
     return res.status(500).json({ error: "Внутренняя ошибка сервера" });
